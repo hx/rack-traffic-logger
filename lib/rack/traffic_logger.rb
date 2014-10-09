@@ -52,8 +52,8 @@ module Rack
     end
 
     REQUEST_TEMPLATES = {
-        true => "%s %s%s HTTP/%s",
-        false => "%s %s%s HTTP/%s"
+        true => "%s %s%s %s",
+        false => "%s %s%s %s"
     }
 
     def log_request!(env)
@@ -61,7 +61,7 @@ module Rack
         env['REQUEST_METHOD'],
         env['PATH_INFO'],
         (q = env['QUERY_STRING']).empty? ? '' : "?#{q}",
-        env['HTTP_VERSION'] || '1.1'
+        env['HTTP_VERSION'] || 'HTTP/1.1'
       ]
       log_headers! env_request_headers(env) if request_headers
       input = env['rack.input']
@@ -72,13 +72,13 @@ module Rack
     end
 
     RESPONSE_TEMPLATES = {
-        true => "HTTP/%s %s %s",
-        false => "HTTP/%s %s %s"
+        true => "%s %s %s",
+        false => "%s %s %s"
     }
 
     def log_response!(env, response)
       debug RESPONSE_TEMPLATES[colors] % [
-          env['HTTP_VERSION'] || '1.1',
+          env['HTTP_VERSION'] || 'HTTP/1.1',
           code = response[0],
           Rack::Utils::HTTP_STATUS_CODES[code]
       ]
