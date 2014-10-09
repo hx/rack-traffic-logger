@@ -51,18 +51,21 @@ module Rack
       @default_options ||= PUBLIC_ATTRIBUTES.map { |k, v| [k, v[:default]] }.to_h
     end
 
+    def render(template, data)
+      template.gsub(/:(\w+)/) { data[$1.to_sym] }
+    end
+
     REQUEST_TEMPLATES = {
-        true => "%s %s%s %s",
-        false => "%s %s%s %s"
+        true => "\e[35m:verb \e[36m:path:qs\e[0m :http",
+        false => ':verb :path:qs :http'
     }
 
     def log_request!(env)
-      debug REQUEST_TEMPLATES[colors] % [
-        env['REQUEST_METHOD'],
-        env['PATH_INFO'],
-        (q = env['QUERY_STRING']).empty? ? '' : "?#{q}",
-        env['HTTP_VERSION'] || 'HTTP/1.1'
-      ]
+      debug render REQUEST_TEMPLATES[colors],
+                   verb: env['REQUEST_METHOD'],
+                   path: env['PATH_INFO'],
+                   qs: (q = env['QUERY_STRING']).empty? ? '' : "?#{q}",
+                   http: env['HTTP_VERSION'] || 'HTTP/1.1'
       log_headers! env_request_headers(env) if request_headers
       input = env['rack.input']
       if request_bodies && input
@@ -72,16 +75,24 @@ module Rack
     end
 
     RESPONSE_TEMPLATES = {
-        true => "%s %s %s",
-        false => "%s %s %s"
+        true => ":http \e[:color:code \e[36m:status\e[0m",
+        false => ':http :code :status'
     }
 
+    def status_color(status)
+      case (status / 100).to_i
+        when 2 then '32m'
+        when 4, 5 then '31m'
+        else '33m'
+      end
+    end
+
     def log_response!(env, response)
-      debug RESPONSE_TEMPLATES[colors] % [
-          env['HTTP_VERSION'] || 'HTTP/1.1',
-          code = response[0],
-          Rack::Utils::HTTP_STATUS_CODES[code]
-      ]
+      debug render RESPONSE_TEMPLATES[colors],
+                   http: env['HTTP_VERSION'] || 'HTTP/1.1',
+                   code: code = response[0],
+                   status: Rack::Utils::HTTP_STATUS_CODES[code],
+                   color: status_color(code)
       log_headers! response[1] if response_headers
       log_body! response[2].join if response_bodies
     end
@@ -91,17 +102,17 @@ module Rack
     end
 
     HEADER_TEMPLATES = {
-        true => "%s: %s\n",
-        false => "%s: %s\n"
+        true => "\e[4m:key\e[0m: :val\n",
+        false => ":key: :val\n"
     }
 
     def log_headers!(headers)
-      info headers.map { |k, v| HEADER_TEMPLATES[colors] % [k, v] }.join
+      info headers.map { |k, v| render HEADER_TEMPLATES[colors], key: k, val: v }.join
     end
 
     def env_request_headers(env)
       env.select do |k, _|
-        k =~ /^(CONTENT|HTTP)_/
+        k =~ /^(CONTENT|HTTP)_(?!VERSION)/
       end.map do |(k, v)|
         [
             k.sub(/^HTTP_/, '').split(/[_ -]/).map do |word|
