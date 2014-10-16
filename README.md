@@ -5,7 +5,7 @@ This is simple Rack middleware for logging incoming/outgoing HTTP/S traffic.
 ## Installation
 
 ```bash
-gem install rack-traggic-logger
+gem install rack-traffic-logger
 ```
 
 ## Usage
