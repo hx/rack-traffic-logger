@@ -4,6 +4,7 @@ require_relative 'traffic_logger/header_hash'
 
 require 'forwardable'
 require 'rack/nulllogger'
+require 'json'
 
 module Rack
   class TrafficLogger
@@ -14,7 +15,9 @@ module Rack
         request_bodies:   {type: [TrueClass, FalseClass], default: true},
         response_headers: {type: [TrueClass, FalseClass], default: true},
         response_bodies:  {type: [TrueClass, FalseClass], default: true},
-        colors: {type: [TrueClass, FalseClass], default: false}
+        colors: {type: [TrueClass, FalseClass], default: false},
+        prevent_compression: {type: [TrueClass, FalseClass], default: false},
+        pretty_print: {type: [TrueClass, FalseClass], default: false}
     }
 
     PUBLIC_ATTRIBUTES.each do |attr, props|
@@ -42,6 +45,7 @@ module Rack
     end
 
     def call(env)
+      env.delete 'HTTP_ACCEPT_ENCODING' if prevent_compression
       log_request! env
       @app.call(env).tap { |response| log_response! env, response }
     end
@@ -105,7 +109,11 @@ module Rack
         if response_bodies
           body = response[2]
           body = ::File.open(body.path, 'rb') { |f| f.read } if body.respond_to? :path
-          body = body.tap(&:rewind).read if body.respond_to? :read
+          if body.respond_to? :read
+            stream = body
+            body = stream.tap(&:rewind).read
+            stream.rewind
+          end
           body = body.join if body.respond_to? :join
           log_body! body,
                     type: headers['Content-Type'],
@@ -115,7 +123,9 @@ module Rack
     end
 
     def log_body!(body, type: nil, encoding: nil)
-      body = "<#BINARY #{body.bytes.length} bytes>" if body =~ /[^[:print:]]/
+      body = Zlib::GzipReader.new(StringIO.new body).read if encoding == 'gzip'
+      body = JSON.pretty_generate(JSON.parse body) if type[/[^;]+/] == 'application/json' && pretty_print
+      body = "<#BINARY #{body.bytes.length} bytes>" if body =~ /[^[:print:]\r\n\t]/
       info body
     end
 

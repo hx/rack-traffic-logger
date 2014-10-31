@@ -6,7 +6,17 @@ module Rack
     class Echo
       def call(env)
         begin
-          [200, {'Content-Type' => 'application/json'}, [JSON.parse(env['rack.input'].tap(&:rewind).read)]]
+          body = JSON.parse(env['rack.input'].tap(&:rewind).read).to_json
+          headers = {'Content-Type' => 'application/json'}
+          if env['HTTP_ACCEPT_ENCODING'] =~ /\bgzip\b/
+            zipped = StringIO.new('w')
+            writer = Zlib::GzipWriter.new(zipped)
+            writer.write body
+            writer.close
+            body = zipped.string
+            headers['Content-Encoding'] = 'gzip'
+          end
+          [200, headers, [body]]
         rescue JSON::ParserError => error
           [
               500,
