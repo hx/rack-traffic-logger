@@ -1,5 +1,6 @@
 require_relative 'traffic_logger/version'
 require_relative 'traffic_logger/logger'
+require_relative 'traffic_logger/header_hash'
 
 require 'forwardable'
 require 'rack/nulllogger'
@@ -66,11 +67,16 @@ module Rack
                    path: env['PATH_INFO'],
                    qs: (q = env['QUERY_STRING']).empty? ? '' : "?#{q}",
                    http: env['HTTP_VERSION'] || 'HTTP/1.1'
-      log_headers! env_request_headers(env) if request_headers
-      input = env['rack.input']
-      if request_bodies && input
-        log_body! input.read
-        input.rewind
+      if request_headers || request_bodies
+        headers = HeaderHash.new(env_request_headers env)
+        log_headers! headers if request_headers
+        input = env['rack.input']
+        if request_bodies && input
+          log_body! input.read,
+                    type: headers['Content-Type'],
+                    encoding: headers['Content-Encoding']
+          input.rewind
+        end
       end
     end
 
@@ -93,11 +99,23 @@ module Rack
                    code: code = response[0],
                    status: Rack::Utils::HTTP_STATUS_CODES[code],
                    color: status_color(code)
-      log_headers! response[1] if response_headers
-      log_body! response[2].join if response_bodies
+      if response_headers || response_bodies
+        headers = HeaderHash.new(response[1])
+        log_headers! headers if response_headers
+        if response_bodies
+          body = response[2]
+          body = ::File.open(body.path, 'rb') { |f| f.read } if body.respond_to? :path
+          body = body.tap(&:rewind).read if body.respond_to? :read
+          body = body.join if body.respond_to? :join
+          log_body! body,
+                    type: headers['Content-Type'],
+                    encoding: headers['Content-Encoding']
+        end
+      end
     end
 
-    def log_body!(body)
+    def log_body!(body, type: nil, encoding: nil)
+      body = "<#BINARY #{body.bytes.length} bytes>" if body =~ /[^[:print:]]/
       info body
     end
 
@@ -111,16 +129,7 @@ module Rack
     end
 
     def env_request_headers(env)
-      env.select do |k, _|
-        k =~ /^(CONTENT|HTTP)_(?!VERSION)/
-      end.map do |(k, v)|
-        [
-            k.sub(/^HTTP_/, '').split(/[_ -]/).map do |word|
-              word[0].upcase << word[1..-1].downcase
-            end.join('-'),
-            v
-        ]
-      end.to_h
+      env.select { |k, _| k =~ /^(CONTENT|HTTP)_(?!VERSION)/ }.map { |(k, v)| [k.sub(/^HTTP_/, ''), v] }.to_h
     end
 
   end
