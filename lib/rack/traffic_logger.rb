@@ -128,6 +128,7 @@ module Rack
     end
 
     def log_body!(body, type: nil, encoding: nil)
+      return unless body
       body = Zlib::GzipReader.new(StringIO.new body).read if encoding == 'gzip'
       body = JSON.pretty_generate(JSON.parse body) if type[/[^;]+/] == 'application/json' && pretty_print
       body = "<#BINARY #{body.bytes.length} bytes>" if body =~ /[^[:print:]\r\n\t]/

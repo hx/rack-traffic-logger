@@ -3,7 +3,7 @@ require 'rack/traffic_logger/echo'
 module Rack
   describe TrafficLogger do
 
-    let(:logger) { double 'Logger', debug: true, info: true }
+    let(:logger) { double 'Logger' }
 
     subject { TrafficLogger.new(TrafficLogger::Echo.new, logger) }
 
@@ -16,45 +16,37 @@ module Rack
 
     describe 'log output' do
 
-      let(:body) {JSON.generate [
-          200,
-          {
-              'Content-Type' => 'text/plain;charset=ISO-8859-1',
-              'X-Foo' => 'bar'
-          },
-          ['response']
-      ]}
-      before do
+      it 'should log the entire request/response' do
+
         verb = :post
         path = '/path?query=string'
         headers = {
             'content-type' => 'text/plain',
             'x-custom' => 'custom!'
         }
-        subject.call mock_env verb, path, headers, body
-      end
-
-      it 'should log the entire request/response' do
+        body = '{}'
 
         # Request
-        expect(logger).to have_received(:debug).ordered.with('POST /path?query=string HTTP/1.1')
+        expect(logger).to receive(:debug).ordered.with('POST /path?query=string HTTP/1.1')
 
         # Request headers
         expected_headers = "Content-Length: #{body.length}\nContent-Type: text/plain\nX-Custom: custom!\n"
-        expect(logger).to have_received(:info).ordered.with expected_headers
+        expect(logger).to receive(:info).ordered.with expected_headers
 
         # Request body
-        expect(logger).to have_received(:info).ordered.with body
+        expect(logger).to receive(:info).ordered.with body
 
         # Response
-        expect(logger).to have_received(:debug).ordered.with('HTTP/1.1 200 OK')
+        expect(logger).to receive(:debug).ordered.with('HTTP/1.1 200 OK')
 
         # Response headers
-        expected_headers = "Content-Type: text/plain;charset=ISO-8859-1\nX-Foo: bar\n"
-        expect(logger).to have_received(:info).ordered.with expected_headers
+        expected_headers = "Content-Type: application/json\n"
+        expect(logger).to receive(:info).ordered.with expected_headers
 
         # Response body
-        expect(logger).to have_received(:info).ordered.with 'response'
+        expect(logger).to receive(:info).ordered.with body
+
+        subject.call mock_env verb, path, headers, body
 
       end
 
