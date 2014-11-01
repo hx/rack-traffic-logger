@@ -90,7 +90,7 @@ module Rack
     }
 
     def status_color(status)
-      case (status / 100).to_i
+      case (status.to_i / 100).to_i
         when 2 then '32m'
         when 4, 5 then '31m'
         else '33m'
@@ -115,6 +115,7 @@ module Rack
             stream.rewind
           end
           body = body.join if body.respond_to? :join
+          body = body.body while Rack::BodyProxy === body
           log_body! body,
                     type: headers['Content-Type'],
                     encoding: headers['Content-Encoding']
