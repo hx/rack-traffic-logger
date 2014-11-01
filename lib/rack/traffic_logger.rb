@@ -46,11 +46,15 @@ module Rack
 
     def call(env)
       env.delete 'HTTP_ACCEPT_ENCODING' if prevent_compression
-      log_request! env
-      @app.call(env).tap { |response| log_response! env, response }
+      safely('logging request') { log_request! env }
+      @app.call(env).tap { |response| safely('logging response') { log_response! env, response } }
     end
 
     private
+
+    def safely(action)
+      yield rescue error "Error #{action}: #{$!}"
+    end
 
     def self.default_options
       @default_options ||= PUBLIC_ATTRIBUTES.map { |k, v| [k, v[:default]] }.to_h
