@@ -1,6 +1,7 @@
 require_relative 'traffic_logger/version'
 require_relative 'traffic_logger/logger'
 require_relative 'traffic_logger/header_hash'
+require_relative 'traffic_logger/json_logger'
 
 require 'forwardable'
 require 'rack/nulllogger'
