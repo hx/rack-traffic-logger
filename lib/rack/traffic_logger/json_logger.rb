@@ -18,10 +18,12 @@ module Rack
 
       attr_reader :app, :options
 
-      def initialize(app, log_path, **options)
+      def initialize(app, log_path, *options)
         @app = app
         @log_path = log_path
-        @options = options
+        @options = {}
+        @status_options = {}
+        options.each { |option| import_option option }
       end
 
       def call(env)
@@ -33,6 +35,34 @@ module Rack
           @log_path.write data
         else
           File.write @log_path, data, mode: 'a', encoding: data.encoding
+        end
+      end
+
+      private
+
+      def import_option(option)
+        case option
+          when :request_bodies, :response_bodies, :request_headers, :response_headers
+            @options[option] = true
+          when :headers
+            @options[:request_headers] = true
+            @options[:response_headers] = true
+          when :bodies
+            @options[:request_bodies] = true
+            @options[:response_bodies] = true
+          when :get, :post, :put, :patch, :delete, :option, :head, :trace
+            (@verb_filter ||= []) << option.to_s.upcase
+          when Hash
+            option.each { |k, v| import_option_pair k, v }
+          else
+            raise "Invalid option of type #{option.class.name} : #{option}"
+        end
+      end
+
+      def import_option_pair(key, value)
+        case key
+          when :request_bodies, :response_bodies, :request_headers, :response_headers
+            raise "Option #{key} must be boolean" unless [TrueClass, FalseClass].include? value.class
         end
       end
 
