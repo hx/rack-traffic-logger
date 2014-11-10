@@ -13,7 +13,7 @@ RSpec.configure do |config|
 
 end
 
-def mock_env(verb, path, headers, body)
+def mock_env(verb = :get, path = '/', headers = {}, body = nil)
   Rack::MockRequest.env_for(path, input: body, method: verb).tap do |env|
     headers.each do |key, value|
       key = key.to_s.upcase.gsub(/[- ]/, '_')

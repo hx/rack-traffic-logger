@@ -1,4 +1,4 @@
-require 'json_logger'
+require 'json'
 require 'securerandom'
 
 module Rack
