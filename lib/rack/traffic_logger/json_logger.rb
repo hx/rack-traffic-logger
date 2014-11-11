@@ -67,17 +67,17 @@ module Rack
 
         def log_request(env)
           log 'request' do |hash|
-            if @options[:request_headers]
+            if @options.request_headers?
               hash.merge! env.reject { |_, v| v.respond_to? :read }
             else
               hash.merge! env.select { |k, _| JsonLogger::BASIC_ENV_PROPERTIES.include? k }
             end
 
-            hash['BASIC_AUTH_USER'], hash['BASIC_AUTH_PASSWORD'] = $1.unpack('m').first.split(':', 2) if hash['HTTP_AUTHORIZATION'] =~ BASIC_AUTH_PATTERN
+            hash['BASIC_AUTH_USERINFO'] = $1.unpack('m').first.split(':', 2) if hash['HTTP_AUTHORIZATION'] =~ BASIC_AUTH_PATTERN
 
             input = env['rack.input']
-            if input && @options[:request_bodies]
-              add_body_to_hash input.read, env['CONTENT_ENCODING'] || env['HTTP_CONTENT_ENCODING'], hash
+            if input && @options.request_bodies?
+              add_body_to_hash input.tap(&:rewind).read, env['CONTENT_ENCODING'] || env['HTTP_CONTENT_ENCODING'], hash
               input.rewind
             end
           end
@@ -86,12 +86,12 @@ module Rack
         def log_response(response)
           code, headers, body = response
           code = code.to_i
-          headers = HeaderHash.new(headers) if @options[:response_headers] || @options[:response_bodies]
+          headers = HeaderHash.new(headers) if @options.response_headers? || @options.response_bodies?
           log 'response' do |hash|
             hash['status_code'] = code
             hash['status_name'] = Utils::HTTP_STATUS_CODES[code]
-            hash['headers'] = headers if @options[:response_headers]
-            add_body_to_hash get_real_body(body), headers['Content-Encoding'], hash if @options[:response_bodies]
+            hash['headers'] = headers if @options.response_headers?
+            add_body_to_hash get_real_body(body), headers['Content-Encoding'], hash if @options.response_bodies?
           end
         end
 

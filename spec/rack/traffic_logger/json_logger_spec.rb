@@ -60,7 +60,7 @@ class Rack::TrafficLogger
 
       describe 'with headers' do
 
-        subject { JsonLogger.new Echo.new, logger, request_headers: true }
+        subject { JsonLogger.new Echo.new, logger, :request_headers }
 
         it 'should log the content type' do
           expect(last_request['CONTENT_TYPE']).to eq 'application/json'
@@ -70,7 +70,7 @@ class Rack::TrafficLogger
 
       describe 'with bodies' do
 
-        subject { JsonLogger.new Echo.new, logger, request_bodies: true }
+        subject { JsonLogger.new Echo.new, logger, :request_bodies }
 
         it 'should log the request body' do
           expect(last_request['body']).to eq '{"a":1}'
@@ -124,7 +124,7 @@ class Rack::TrafficLogger
 
       describe 'with headers' do
 
-        subject { JsonLogger.new Echo.new, logger, response_headers: true }
+        subject { JsonLogger.new Echo.new, logger, :response_headers }
 
         it 'should log the response headers' do
           expect(last_response['headers']).to eq({'Content-Type' => 'application/json'})
@@ -134,7 +134,7 @@ class Rack::TrafficLogger
 
       describe 'with bodies' do
 
-        subject { JsonLogger.new Echo.new, logger, response_bodies: true }
+        subject { JsonLogger.new Echo.new, logger, :response_bodies }
 
         it 'should log the response headers' do
           expect(last_response['body']).to eq '{"foo":"bar"}'
