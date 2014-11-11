@@ -21,9 +21,7 @@ module Rack
       def initialize(app, log_path, *options)
         @app = app
         @log_path = log_path
-        @options = {}
-        @status_options = {}
-        options.each { |option| import_option option }
+        @options = OptionInterpreter.new(*options)
       end
 
       def call(env)
@@ -40,43 +38,27 @@ module Rack
 
       private
 
-      def import_option(option)
-        case option
-          when :request_bodies, :response_bodies, :request_headers, :response_headers
-            @options[option] = true
-          when :headers
-            @options[:request_headers] = true
-            @options[:response_headers] = true
-          when :bodies
-            @options[:request_bodies] = true
-            @options[:response_bodies] = true
-          when :get, :post, :put, :patch, :delete, :option, :head, :trace
-            (@verb_filter ||= []) << option.to_s.upcase
-          when Hash
-            option.each { |k, v| import_option_pair k, v }
-          else
-            raise "Invalid option of type #{option.class.name} : #{option}"
-        end
-      end
-
-      def import_option_pair(key, value)
-        case key
-          when :request_bodies, :response_bodies, :request_headers, :response_headers
-            raise "Option #{key} must be boolean" unless [TrueClass, FalseClass].include? value.class
-        end
-      end
-
       class Request
 
         def initialize(logger)
           @logger = logger
-          @options = logger.options
           @id = SecureRandom.hex 4
+          @started_at = Time.now
         end
 
         def call(env)
-          log_request env
-          @logger.app.call(env).tap { |response| log_response response }
+          @verb = env['REQUEST_METHOD']
+          @env = env
+          begin
+            response = @logger.app.call(env)
+          ensure
+            @code = Array === response ? response.first.to_i : 0
+            @options = @logger.options.for(@verb, @code)
+            if @options.basic?
+              log_request env
+              log_response response if @code > 0
+            end
+          end
         end
 
         private
