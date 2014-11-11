@@ -13,15 +13,9 @@ module Rack
           response_bodies: false
       }
 
-      SILENT = Hash.new { false }
+      SILENT = {} # Hash.new { false }
 
       VERBS = %i[get post put patch delete head options trace]
-
-      class CodeOptionSet < Hash
-        def initialize(defaults)
-          super() { |_, k| defaults[k] }
-        end
-      end
 
       class OptionSet < Hash
         attr_reader :defaults
@@ -45,15 +39,21 @@ module Rack
         end
       end
 
+      class GlobalOptionSet < OptionSet
+        def self.child_class
+          VerbOptionSet
+        end
+      end
+
       class VerbOptionSet < OptionSet
         def self.child_class
           CodeOptionSet
         end
       end
 
-      class GlobalOptionSet < OptionSet
-        def self.child_class
-          VerbOptionSet
+      class CodeOptionSet < Hash
+        def initialize(defaults)
+          super() { |_, k| defaults[k] }
         end
       end
 

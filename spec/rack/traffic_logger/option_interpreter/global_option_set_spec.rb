@@ -128,7 +128,7 @@ class Rack::TrafficLogger::OptionInterpreter
         end
       end
 
-      describe 'of statuses and codes' do
+      describe 'of statuses with codes' do
         before do
           subject.isolate :get
           subject.only_isolated!
@@ -140,6 +140,22 @@ class Rack::TrafficLogger::OptionInterpreter
           expect(subject[:get][200][:requests]).to be true
           expect(subject[:get][400][:requests]).to be false
           expect(subject[:post][200][:requests]).to be false
+          expect(subject[:post][400][:requests]).to be false
+        end
+      end
+
+      describe 'of statuses and codes independently' do
+        before do
+          subject.isolate :get
+          subject.only_isolated!
+          subject[nil].isolate 200
+          subject[nil].only_isolated!
+        end
+
+        it 'should mute non-isolated codes and statuses' do
+          expect(subject[:get][200][:requests]).to be true
+          expect(subject[:get][400][:requests]).to be true
+          expect(subject[:post][200][:requests]).to be true
           expect(subject[:post][400][:requests]).to be false
         end
       end
