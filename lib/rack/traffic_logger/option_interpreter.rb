@@ -8,6 +8,7 @@ module Rack
       TYPES = %i[request_headers response_headers request_bodies response_bodies]
 
       def initialize(*options)
+        @tests = {}
         add_rules options
       end
 
@@ -73,7 +74,22 @@ module Rack
         end
       end
 
-      def test(verb, code, type = nil)
+      # Test whether a given verb, status code, and log type should be logged
+      # @param verb [Symbol] One of the {self::VERBS} symbols
+      # @param code [Fixnum] The HTTP status code
+      # @param type [Symbol|NilClass] One of the {self::TYPES} symbols, or `nil` for basic request/response details
+      # @return [TrueClass|FalseClass] Whether the type should be logged
+      def test(*args)
+        if @tests.key? args
+          @tests[args]
+        else
+          @tests[args] = _test *args
+        end
+      end
+
+      private
+
+      def _test(verb, code, type = nil)
 
         # To start, only allow if not a header/body
         type_result = type == nil
@@ -96,8 +112,6 @@ module Rack
         type_result && ![only_verb, only_code].include?(false)
 
       end
-      #
-      # private
 
       def rules
         @rules ||= []
