@@ -22,16 +22,13 @@ class Rack::TrafficLogger
           @context.it message do
             case args.first
               when true, false
-                expect(subject.requests? verb, code).to be args.first
-                expect(subject.responses? verb, code).to be args.first
+                expect(subject.basic? verb, code).to be args.first
                 FLAGS.each { |flag| expect(subject.__send__ :"#{flag}?", verb, code).to be false }
               when :all
-                expect(subject.requests? verb, code).to be true
-                expect(subject.responses? verb, code).to be true
+                expect(subject.basic? verb, code).to be true
                 FLAGS.each { |flag| expect(subject.__send__ :"#{flag}?", verb, code).to be true }
               else
-                expect(subject.requests? verb, code).to be true
-                expect(subject.responses? verb, code).to be true
+                expect(subject.basic? verb, code).to be true
                 FLAGS.each { |flag| expect(subject.__send__ :"#{flag}?", verb, code).to be args.include? flag }
             end
           end
@@ -62,8 +59,7 @@ class Rack::TrafficLogger
       subject { OptionInterpreter.new 200 => :all, 300 => false }
 
       it 'should provide shorthand methods' do
-        expect(subject.responses? :get, 200).to be subject.for(:get, 200).responses?
-        expect(subject.requests? :get, 300).to be subject.for(:get, 300).requests?
+        expect(subject.basic? :get, 200).to be subject.for(:get, 200).basic?
         expect(subject.response_bodies? :get, 400).to be subject.for(:get, 400).response_bodies?
       end
 
@@ -84,7 +80,7 @@ class Rack::TrafficLogger
       end
 
       with_args :response_headers, :response_bodies do |i|
-        i.any :response_headers, :request_bodies
+        i.any :response_headers, :response_bodies
       end
 
       with_args :request_bodies do |i|
@@ -102,8 +98,8 @@ class Rack::TrafficLogger
       with_args post: [:request_bodies, :response_headers], delete: :all, 300...400 => false do |i|
         i.post 201, :request_bodies, :response_headers
         i.delete 204, :all
-        i.post 400, false
-        i.get 400, false
+        i.post 400, :request_bodies, :response_headers
+        i.get 301, false
         i.get 200, true
       end
 
@@ -123,7 +119,7 @@ class Rack::TrafficLogger
         i.post 500, :response_bodies
       end
 
-      with_args only: {post: {400...600 => [:response_bodies, :response_headers]}} do |i|
+      with_args only: {post: {only: {400...600 => [:response_bodies, :response_headers]}}} do |i|
         i.get false
         i.patch false
         i.delete false
@@ -149,4 +145,4 @@ class Rack::TrafficLogger
     end
 
   end
-end if false
+end

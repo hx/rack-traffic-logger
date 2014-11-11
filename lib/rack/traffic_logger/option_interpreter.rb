@@ -1,5 +1,3 @@
-require_relative 'option_interpreter/option_proxy'
-
 module Rack
   class TrafficLogger
     class OptionInterpreter
@@ -13,23 +11,44 @@ module Rack
       end
 
       class Rule
-        attr_reader :arg
+        attr_reader :arg, :filter
         def initialize(arg, filter = {})
           @arg = arg
           @filter = filter
         end
         def inspect
-          "<#{@filter} #{self.class.name[/[^:]+$/]}: #{@arg}>"
+          "<#{filter} #{self.class.name[/[^:]+$/]}: #{arg}>"
         end
         def applies?(verb, code)
-          return false if @filter[:verb] && verb != @filter[:verb]
-          !@filter[:code] || @filter[:code] === code
+          return false if filter[:verb] && verb != filter[:verb]
+          !filter[:code] || filter[:code] === code
         end
       end
 
       class OnlyVerb < Rule; end
       class OnlyCode < Rule; end
       class Include < Rule; end
+      class Exclude < Rule; end
+
+      TYPES.each do |type|
+        define_method(:"#{type}?") { |verb, code| test verb, code, type }
+      end
+
+      class OptionProxy
+        def initialize(interpreter, verb, code)
+          @interpreter = interpreter
+          @verb = verb
+          @code = code
+        end
+        (TYPES + [:basic]).each do |type|
+          method = :"#{type}?"
+          define_method(method) { @interpreter.__send__ method, @verb, @code }
+        end
+      end
+
+      def for(verb, code)
+        OptionProxy.new self, verb, code
+      end
 
       def add_rules(input, **filter)
         input = [input] unless Array === input
@@ -39,12 +58,14 @@ module Rack
           case token
             when *VERBS
               raise "Verb on verb (#{token} on #{verb})" if verb
-              rules << OnlyVerb.new(token, filter) #[:only_verb, token, filter]
+              rules << OnlyVerb.new(token, filter)
             when Fixnum, Range
               raise "Code on code (#{token} on #{code})" if code
-              rules << OnlyCode.new(token, filter) #[:only_code, token, filter]
+              rules << OnlyCode.new(token, filter)
             when *TYPES
-              rules << Include.new(token, filter) #[:include, token, filter]
+              rules << Include.new(token, filter)
+            when FalseClass
+              rules << Exclude.new(nil, filter)
             when :headers then add_rules [:request_headers, :response_headers], **filter
             when :bodies then add_rules [:request_bodies, :response_bodies], **filter
             when :all then add_rules [:headers, :bodies], **filter
@@ -87,6 +108,8 @@ module Rack
         end
       end
 
+      alias :basic? :test
+
       private
 
       def _test(verb, code, type = nil)
@@ -104,6 +127,9 @@ module Rack
             when Include then type_result ||= rule.arg == type
             when OnlyVerb then only_verb ||= rule.arg == verb
             when OnlyCode then only_code ||= rule.arg === code
+            when Exclude
+              only_verb ||= false if rule.filter[:verb]
+              only_code ||= false if rule.filter[:code]
             else nil
           end
         end
