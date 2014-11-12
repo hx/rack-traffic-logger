@@ -5,8 +5,11 @@ module Rack
     class Formatter
       class JSON < self
 
-        def format(hash)
-          ::JSON.generate hash
+        def initialize(pretty_print: false)
+          formatter = pretty_print ?
+              -> hash { ::JSON.pretty_generate(hash) << "\n" } :
+              -> hash { ::JSON.generate(hash) << "\n" }
+          define_singleton_method :format, formatter
         end
 
       end
