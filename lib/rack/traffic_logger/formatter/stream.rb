@@ -10,7 +10,7 @@ module Rack
         def format(hash)
           time = hash[:timestamp]
           id = hash[:request_log_id]
-          "@ #{time.strftime '%a %d %b \'%y %T'}.#{'%d' % (time.usec / 1e4)} ##{id}\n" << @simulator.format(hash)
+          "@ #{time.strftime '%a %d %b \'%y %T'}.#{'%d' % (time.usec / 1e4)} ##{id}\n#{@simulator.format(hash)}\n\n"
         end
 
       end
