@@ -13,8 +13,8 @@ module Rack
         @input = input
         @output = output
         @formatter = Formatter::Stream.new(**options)
-        Signal.trap('INT') { exit 0 }
-        loop { readline }
+        Signal.trap('INT') { done }
+        readline until @done
       end
 
       # Reads a line from input, formats it, and sends it to output
@@ -27,7 +27,7 @@ module Rack
           rescue IO::EAGAINWaitReadable
             sleep 0.1
           rescue EOFError
-            exit 0
+            return done
           end
         end
       end
@@ -42,6 +42,10 @@ module Rack
         rescue
           @output << line
         end
+      end
+
+      def done
+        @done = true
       end
 
     end
