@@ -1,6 +1,6 @@
 # noinspection RubyStringKeysInHashInspection
 class Rack::TrafficLogger
-  describe SimpleFormatter do
+  describe StreamSimulator do
 
     let(:basic_request) {{
         event: 'request',
@@ -257,7 +257,7 @@ class Rack::TrafficLogger
 
     describe 'pretty print' do
 
-      subject { SimpleFormatter.new pretty_print: true }
+      subject { StreamSimulator.new pretty_print: true }
 
       describe 'requests' do
         let(:input) { basic_request.merge 'CONTENT_TYPE' => 'application/json', 'body' => {a: 1}.to_json }

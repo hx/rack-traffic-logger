@@ -21,11 +21,16 @@ module Rack
       def initialize(app, log_path, *options)
         @app = app
         @log_path = log_path
+        @formatter = options.first.respond_to?(:format) ? options.shift : Formatter::Stream.new
         @options = OptionInterpreter.new(*options)
       end
 
       def call(env)
         Request.new(self).call env
+      end
+
+      def log(hash)
+        write @formatter.format hash
       end
 
       def write(data)
@@ -134,7 +139,7 @@ module Rack
               event: event
           }
           yield hash rescue hash.merge! error: $!
-          @logger.write JSON.generate hash
+          @logger.log hash
         end
 
       end

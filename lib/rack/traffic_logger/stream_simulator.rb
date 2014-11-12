@@ -1,6 +1,6 @@
 module Rack
   class TrafficLogger
-    class SimpleFormatter
+    class StreamSimulator
 
       def initialize(color: false, pretty_print: false)
         @color = color
