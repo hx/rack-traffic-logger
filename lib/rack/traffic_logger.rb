@@ -44,7 +44,7 @@ module Rack
       if @log_path.respond_to? :write
         @log_path.write data
       else
-        File.write @log_path, data, mode: 'a', encoding: data.encoding
+        ::File.write @log_path, data, mode: 'a', encoding: data.encoding
       end
     end
 

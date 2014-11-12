@@ -48,7 +48,8 @@ module Rack
         result = render RESPONSE_TEMPLATES[@color],
                         http: input['http_version'] || 'HTTP/1.1',
                         code: input['status_code'],
-                        status: input['status_name']
+                        status: input['status_name'],
+                        color: status_color(input['status_code'])
         headers = input['headers']
         result << format_headers(headers) if headers
         result << format_body(input, headers && headers['Content-Type'])
@@ -80,6 +81,14 @@ module Rack
 
       def env_request_headers(env)
         env.select { |k, _| k =~ /^(CONTENT|HTTP)_(?!VERSION)/ }.map { |(k, v)| [k.sub(/^HTTP_/, ''), v] }.to_h
+      end
+
+      def status_color(status)
+        case (status.to_i / 100).to_i
+          when 2 then '32m'
+          when 4, 5 then '31m'
+          else '33m'
+        end
       end
 
     end
