@@ -1,3 +1,5 @@
+require_relative 'option_interpreter/shorthand'
+
 module Rack
   class TrafficLogger
     class OptionInterpreter
