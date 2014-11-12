@@ -134,6 +134,14 @@ class Rack::TrafficLogger
         i.patch true
       end
 
+      with_args [:put, :patch] => false do |i|
+        i.get true
+        i.delete true
+        i.put false
+        i.patch false
+        i.head true
+      end
+
       with_args 301, 400...600 do |i|
         i.get 200, false
         i.put 300, false

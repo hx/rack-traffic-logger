@@ -91,6 +91,7 @@ module Rack
         case name
           when *VERBS then add_rules value, **filter.merge(verb: name)
           when Fixnum, Range then add_rules value, **filter.merge(code: name)
+          when Array then name.each { |n| add_rule_pair n, value, **filter }
           else raise "Invalid token of type #{name.class.name} : #{name}"
         end
       end
