@@ -255,5 +255,42 @@ class Rack::TrafficLogger
 
     end
 
+    describe 'pretty print' do
+
+      subject { SimpleFormatter.new pretty_print: true }
+
+      describe 'requests' do
+        let(:input) { basic_request.merge 'CONTENT_TYPE' => 'application/json', 'body' => {a: 1}.to_json }
+
+        it 'should pretty-print JSON bodies' do
+          expected = '
+POST /foo/bar?xyz=123 HTTP/1.1
+Content-Type: application/json
+
+{
+  "a": 1
+}
+          '.strip
+          expect(subject.format input).to eq expected
+        end
+      end
+
+      describe 'responses' do
+        let(:input) { basic_response.merge 'headers' => {'Content-Type' => 'application/json'}, 'body' => {a: 1}.to_json }
+
+        it 'should pretty-print JSON bodies' do
+          expected = '
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "a": 1
+}
+          '.strip
+          expect(subject.format input).to eq expected
+        end
+      end
+
+    end
   end
 end

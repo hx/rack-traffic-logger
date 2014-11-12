@@ -41,7 +41,7 @@ module Rack
                         qs: (q = input['QUERY_STRING']).empty? ? '' : "?#{q}",
                         http: input['HTTP_VERSION'] || 'HTTP/1.1'
         result << format_headers(env_request_headers input)
-        result << format_body(input)
+        result << format_body(input, input['CONTENT_TYPE'] || input['HTTP_CONTENT_TYPE'])
       end
 
       def format_response(input)
@@ -49,8 +49,9 @@ module Rack
                         http: input['http_version'] || 'HTTP/1.1',
                         code: input['status_code'],
                         status: input['status_name']
-        result << format_headers(input['headers']) if input['headers']
-        result << format_body(input)
+        headers = input['headers']
+        result << format_headers(headers) if headers
+        result << format_body(input, headers && headers['Content-Type'])
       end
 
       def render(template, data)
@@ -66,15 +67,15 @@ module Rack
         end.join
       end
 
-      def format_body(input)
-        if input['body']
-          "\n\n" << input['body']
-        elsif input['body_base64']
-          length = input['body_base64'].unpack('m').first.length
-          "\n\n<BINARY (#{length} byte#{length == 1 ? '' : 's'})>"
-        else
-          ''
+      def format_body(input, content_type)
+        body = input['body_base64'] ? input['body_base64'].unpack('m').first : input['body']
+        return '' unless body
+        body = JSON.pretty_generate(JSON.parse body) rescue body if @pretty_print && content_type =~ %r{^application/json(;|$)}
+        if body =~ /[^[:print:]\r\n\t]/
+          length = body.bytes.length
+          body = "<BINARY (#{length} byte#{length == 1 ? '' : 's'})>"
         end
+        "\n\n#{body}"
       end
 
       def env_request_headers(env)
