@@ -19,6 +19,8 @@ module Rack
         PATH_INFO
         QUERY_STRING
         HTTP_VERSION
+        REMOTE_HOST
+        REMOTE_ADDR
       ]
 
     attr_reader :app, :options
