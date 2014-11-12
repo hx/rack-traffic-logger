@@ -3,6 +3,7 @@ require_relative 'traffic_logger/logger'
 require_relative 'traffic_logger/header_hash'
 require_relative 'traffic_logger/json_logger'
 require_relative 'traffic_logger/option_interpreter'
+require_relative 'traffic_logger/simple_formatter'
 
 require 'forwardable'
 require 'rack/nulllogger'
