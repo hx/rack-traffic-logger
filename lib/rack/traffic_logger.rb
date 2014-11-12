@@ -1,155 +1,152 @@
 require_relative 'traffic_logger/version'
-require_relative 'traffic_logger/logger'
 require_relative 'traffic_logger/header_hash'
-require_relative 'traffic_logger/json_logger'
 require_relative 'traffic_logger/option_interpreter'
 require_relative 'traffic_logger/stream_simulator'
 require_relative 'traffic_logger/formatter'
 
-require 'forwardable'
-require 'rack/nulllogger'
 require 'json'
+require 'securerandom'
 
 module Rack
   class TrafficLogger
-    extend Forwardable
 
-    PUBLIC_ATTRIBUTES = {
-        request_headers:  {type: [TrueClass, FalseClass], default: true},
-        request_bodies:   {type: [TrueClass, FalseClass], default: true},
-        response_headers: {type: [TrueClass, FalseClass], default: true},
-        response_bodies:  {type: [TrueClass, FalseClass], default: true},
-        colors: {type: [TrueClass, FalseClass], default: false},
-        prevent_compression: {type: [TrueClass, FalseClass], default: false},
-        pretty_print: {type: [TrueClass, FalseClass], default: false}
-    }
+    # These environment properties will always be logged as part of request logs
+    BASIC_ENV_PROPERTIES = %w[
+        REQUEST_METHOD
+        HTTPS
+        SERVER_NAME
+        SERVER_PORT
+        PATH_INFO
+        QUERY_STRING
+        HTTP_VERSION
+      ]
 
-    PUBLIC_ATTRIBUTES.each do |attr, props|
-      type = props[:type]
-      type = [type] unless Array === type
-      define_method(attr) { @options[attr] }
-      define_method :"#{attr}=" do |value|
-        raise "Expected one of [#{type.map(&:name).join ' | '}], got #{value.class.name}" unless type.find { |t| t === value }
-        @options[attr] = value
-      end
-    end
+    attr_reader :app, :options
 
-    delegate %i(info debug warn error fatal) => :@logger
-
-    def initialize(app, logger = nil, options = {})
-      Raise "Expected a Hash, but got #{options.class.name}" unless Hash === options
+    def initialize(app, log_path, *options)
       @app = app
-      case logger
-        when nil, false then logger = Logger.new(STDOUT)
-        when String, IO then logger = Logger.new(logger)
-        else logger = Rack::NullLogger.new(nil) unless logger.respond_to? :debug
-      end
-      @logger = logger
-      @options = self.class.default_options.merge(options)
+      @log_path = log_path
+      @formatter = options.first.respond_to?(:format) ? options.shift : Formatter::Stream.new
+      @options = OptionInterpreter.new(*options)
     end
 
     def call(env)
-      env.delete 'HTTP_ACCEPT_ENCODING' if prevent_compression
-      safely('logging request') { log_request! env }
-      @app.call(env).tap { |response| safely('logging response') { log_response! env, response } }
+      Request.new(self).call env
+    end
+
+    def log(hash)
+      write @formatter.format hash
+    end
+
+    def write(data)
+      if @log_path.respond_to? :write
+        @log_path.write data
+      else
+        File.write @log_path, data, mode: 'a', encoding: data.encoding
+      end
     end
 
     private
 
-    def safely(action)
-      yield rescue error "Error #{action}: #{$!}"
-    end
+    class Request
 
-    def self.default_options
-      @default_options ||= PUBLIC_ATTRIBUTES.map { |k, v| [k, v[:default]] }.to_h
-    end
-
-    def render(template, data)
-      template.gsub(/:(\w+)/) { data[$1.to_sym] }
-    end
-
-    REQUEST_TEMPLATES = {
-        true => "\e[35m:verb \e[36m:path:qs\e[0m :http",
-        false => ':verb :path:qs :http'
-    }
-
-    def log_request!(env)
-      debug render REQUEST_TEMPLATES[colors],
-                   verb: env['REQUEST_METHOD'],
-                   path: env['PATH_INFO'],
-                   qs: (q = env['QUERY_STRING']).empty? ? '' : "?#{q}",
-                   http: env['HTTP_VERSION'] || 'HTTP/1.1'
-      if request_headers || request_bodies
-        headers = HeaderHash.new(env_request_headers env)
-        log_headers! headers if request_headers
-        input = env['rack.input']
-        if request_bodies && input
-          log_body! input.read,
-                    type: headers['Content-Type'],
-                    encoding: headers['Content-Encoding']
-          input.rewind
-        end
+      def initialize(logger)
+        @logger = logger
+        @id = SecureRandom.hex 4
+        @started_at = Time.now
       end
-    end
 
-    RESPONSE_TEMPLATES = {
-        true => ":http \e[:color:code \e[36m:status\e[0m",
-        false => ':http :code :status'
-    }
-
-    def status_color(status)
-      case (status.to_i / 100).to_i
-        when 2 then '32m'
-        when 4, 5 then '31m'
-        else '33m'
-      end
-    end
-
-    def log_response!(env, response)
-      debug render RESPONSE_TEMPLATES[colors],
-                   http: env['HTTP_VERSION'] || 'HTTP/1.1',
-                   code: code = response[0],
-                   status: Rack::Utils::HTTP_STATUS_CODES[code],
-                   color: status_color(code)
-      if response_headers || response_bodies
-        headers = HeaderHash.new(response[1])
-        log_headers! headers if response_headers
-        if response_bodies
-          body = response[2]
-          body = ::File.open(body.path, 'rb') { |f| f.read } if body.respond_to? :path
-          if body.respond_to? :read
-            stream = body
-            body = stream.tap(&:rewind).read
-            stream.rewind
+      def call(env)
+        @verb = env['REQUEST_METHOD']
+        @env = env
+        begin
+          response = @logger.app.call(env)
+        ensure
+          @code = Array === response ? response.first.to_i : 0
+          @options = @logger.options.for(@verb, @code)
+          if @options.basic?
+            log_request env
+            log_response env, response if @code > 0
           end
-          body = body.join if body.respond_to? :join
-          body = body.body while Rack::BodyProxy === body
-          log_body! body,
-                    type: headers['Content-Type'],
-                    encoding: headers['Content-Encoding']
         end
       end
-    end
 
-    def log_body!(body, type: nil, encoding: nil)
-      return unless body
-      body = Zlib::GzipReader.new(StringIO.new body).read if encoding == 'gzip'
-      body = JSON.pretty_generate(JSON.parse body) if type[/[^;]+/] == 'application/json' && pretty_print
-      body = "<#BINARY #{body.bytes.length} bytes>" if body =~ /[^[:print:]\r\n\t]/
-      info body
-    end
+      private
 
-    HEADER_TEMPLATES = {
-        true => "\e[4m:key\e[0m: :val\n",
-        false => ":key: :val\n"
-    }
+      BASIC_AUTH_PATTERN = /^basic ([a-z\d+\/]+={0,2})$/i
 
-    def log_headers!(headers)
-      info headers.map { |k, v| render HEADER_TEMPLATES[colors], key: k, val: v }.join
-    end
+      def log_request(env)
+        log 'request' do |hash|
+          if @options.request_headers?
+            hash.merge! env.reject { |_, v| v.respond_to? :read }
+          else
+            hash.merge! env.select { |k, _| BASIC_ENV_PROPERTIES.include? k }
+          end
 
-    def env_request_headers(env)
-      env.select { |k, _| k =~ /^(CONTENT|HTTP)_(?!VERSION)/ }.map { |(k, v)| [k.sub(/^HTTP_/, ''), v] }.to_h
+          hash['BASIC_AUTH_USERINFO'] = $1.unpack('m').first.split(':', 2) if hash['HTTP_AUTHORIZATION'] =~ BASIC_AUTH_PATTERN
+
+          input = env['rack.input']
+          if input && @options.request_bodies?
+            add_body_to_hash input.tap(&:rewind).read, env['CONTENT_ENCODING'] || env['HTTP_CONTENT_ENCODING'], hash
+            input.rewind
+          end
+        end
+      end
+
+      def log_response(env, response)
+        code, headers, body = response
+        code = code.to_i
+        headers = HeaderHash.new(headers) if @options.response_headers? || @options.response_bodies?
+        log 'response' do |hash|
+          hash['http_version'] = env['HTTP_VERSION'] || 'HTTP/1.1'
+          hash['status_code'] = code
+          hash['status_name'] = Utils::HTTP_STATUS_CODES[code]
+          hash['headers'] = headers if @options.response_headers?
+          add_body_to_hash get_real_body(body), headers['Content-Encoding'], hash if @options.response_bodies?
+        end
+      end
+
+      # Rack allows response bodies to be a few different things. This method
+      # ensures we get a string back.
+      def get_real_body(body)
+
+        # For bodies representing temporary files
+        body = File.open(body.path, 'rb') { |f| f.read } if body.respond_to? :path
+
+        # For bodies representing streams
+        body = body.read.tap { body.rewind } if body.respond_to? :read
+
+        # When body is an array (the common scenario)
+        body = body.join if body.respond_to? :join
+
+        # When body is a proxy
+        body = body.body while Rack::BodyProxy === body
+
+        # It should be a string now. Just in case it's not...
+        body.to_s
+
+      end
+
+      def add_body_to_hash(body, encoding, hash)
+        body = Zlib::GzipReader.new(StringIO.new body).read if encoding == 'gzip'
+        body.force_encoding 'UTF-8'
+        if body.valid_encoding?
+          hash['body'] = body
+        else
+          hash['body_base64'] = [body].pack 'm0'
+        end
+      end
+
+      def log(event)
+        hash = {
+            timestamp: Time.now,
+            request_log_id: @id,
+            event: event
+        }
+        yield hash rescue hash.merge! error: $!
+        @logger.log hash
+      end
+
     end
 
   end
