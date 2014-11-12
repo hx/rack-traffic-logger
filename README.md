@@ -133,3 +133,33 @@ If you need to, you can get pretty fancy:
 use Rack::TrafficLogger, 'file.log', :request_headers, 401 => false, 500...600 => :all, 200...300 => {post: :request_bodies, delete: false}
 use Rack::TrafficLogger, 'file.log', [:get, :head] => 200..204, post: {only: {201 => :request_bodies}}, [:put, :patch] => :all
 ```
+
+### Tailing a JSON log
+
+Tailing a JSON log can induce migraines. There are a couple of solutions:
+
+#### Pipe it through the log parser
+
+This gem is bundled with the `parse-rack-traffic-log` executable for this exact purpose.
+
+```bash
+tail -f traffic.log | parse-rack-traffic-log
+```
+
+This will let you tail a JSON log as if it were a regular log. You can add colors and/or JSON pretty printing using environment variables:
+
+```bash
+tail -f traffic.log | PRETTY_PRINT=1 COLOR=1 parse-rack-traffic-log
+```
+
+I haven't tested this with `less` but it should give the same result.
+
+#### Use pretty-printing
+
+You can make the JSON formatter output pretty:
+
+```ruby
+use Rack::TrafficLogger, 'file.log', Rack::TrafficLogger::Formatter::JSON.new(pretty_print: true)
+```
+
+Note that if you do, log parsers may have a hard time understanding your logs if they expect each event to be on a single line. If you think this could be an issue, use the first method instead.

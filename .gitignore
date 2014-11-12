@@ -19,7 +19,7 @@ tmp
 *.so
 *.o
 *.a
-mkmf.log
+*.log
 
 # For IDEA:
 /rack-traffic-logger.iml

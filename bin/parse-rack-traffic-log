@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+require_relative '../lib/rack/traffic_logger'
+Rack::TrafficLogger::Reader.start STDIN, STDOUT, pretty_print: !!ENV['PRETTY_PRINT'], color: !!ENV['COLOR']

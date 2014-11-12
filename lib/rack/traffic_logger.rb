@@ -3,6 +3,7 @@ require_relative 'traffic_logger/header_hash'
 require_relative 'traffic_logger/option_interpreter'
 require_relative 'traffic_logger/stream_simulator'
 require_relative 'traffic_logger/formatter'
+require_relative 'traffic_logger/reader'
 
 require 'json'
 require 'securerandom'
