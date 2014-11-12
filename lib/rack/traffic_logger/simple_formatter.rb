@@ -44,6 +44,15 @@ module Rack
         result << format_body(input)
       end
 
+      def format_response(input)
+        result = render RESPONSE_TEMPLATES[@color],
+                        http: input['http_version'] || 'HTTP/1.1',
+                        code: input['status_code'],
+                        status: input['status_name']
+        result << format_headers(input['headers']) if input['headers']
+        result << format_body(input)
+      end
+
       def render(template, data)
         template.gsub(/:(\w+)/) { data[$1.to_sym] }
       end

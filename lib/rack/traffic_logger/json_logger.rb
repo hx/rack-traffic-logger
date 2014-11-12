@@ -56,7 +56,7 @@ module Rack
             @options = @logger.options.for(@verb, @code)
             if @options.basic?
               log_request env
-              log_response response if @code > 0
+              log_response env, response if @code > 0
             end
           end
         end
@@ -83,11 +83,12 @@ module Rack
           end
         end
 
-        def log_response(response)
+        def log_response(env, response)
           code, headers, body = response
           code = code.to_i
           headers = HeaderHash.new(headers) if @options.response_headers? || @options.response_bodies?
           log 'response' do |hash|
+            hash['http_version'] = env['HTTP_VERSION'] || 'HTTP/1.1'
             hash['status_code'] = code
             hash['status_name'] = Utils::HTTP_STATUS_CODES[code]
             hash['headers'] = headers if @options.response_headers?
