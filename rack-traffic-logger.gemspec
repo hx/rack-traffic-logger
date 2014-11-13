@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/hx/rack-traffic-logger'
   spec.license       = 'MIT'
 
-  spec.files         = Dir['README*', 'LICENSE*', '{lib,bin}/**/*.rb'] & `git ls-files -z`.split("\x0")
+  spec.files         = Dir['README*', 'LICENSE*', 'lib/**/*.rb', 'bin/*'] & `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
