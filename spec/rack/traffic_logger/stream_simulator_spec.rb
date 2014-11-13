@@ -7,10 +7,12 @@ class Rack::TrafficLogger
         'REQUEST_METHOD' => 'POST',
         'PATH_INFO' => '/foo/bar',
         'QUERY_STRING' => 'xyz=123',
-        'HTTP_VERSION' => 'HTTP/1.1'
+        'HTTP_VERSION' => 'HTTP/1.1',
+        'SERVER_NAME' => 'remote.kom',
+        'SERVER_PORT' => 88
     }}
 
-    let(:basic_request_formatted) { 'POST /foo/bar?xyz=123 HTTP/1.1' }
+    let(:basic_request_formatted) { 'POST http://remote.kom:88/foo/bar?xyz=123 HTTP/1.1' }
 
     let(:request_headers) {{
         'CONTENT_TYPE' => 'text/plain',
@@ -264,7 +266,7 @@ class Rack::TrafficLogger
 
         it 'should pretty-print JSON bodies' do
           expected = '
-POST /foo/bar?xyz=123 HTTP/1.1
+POST http://remote.kom:88/foo/bar?xyz=123 HTTP/1.1
 Content-Type: application/json
 
 {

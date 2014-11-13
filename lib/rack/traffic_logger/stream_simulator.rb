@@ -18,8 +18,8 @@ module Rack
       private
 
       REQUEST_TEMPLATES = {
-          true => "\e[35m:verb \e[36m:path:qs\e[0m :http",
-          false => ':verb :path:qs :http'
+          true => "\e[35m:verb \e[36m:scheme://:hostname\e[1m:path\e[0;36m:qs\e[0m :http",
+          false => ':verb :scheme://:hostname:path:qs :http'
       }
 
       RESPONSE_TEMPLATES = {
@@ -36,6 +36,8 @@ module Rack
 
       def format_request(input)
         result = render REQUEST_TEMPLATES[@color],
+                        scheme: input['HTTPS'] ? 'https' : 'http',
+                        hostname: host_with_port(input),
                         verb: input['REQUEST_METHOD'],
                         path: input['PATH_INFO'],
                         qs: (q = input['QUERY_STRING'] || '').empty? ? '' : "?#{q}",
@@ -88,6 +90,17 @@ module Rack
           when 2 then '32m'
           when 4, 5 then '31m'
           else '33m'
+        end
+      end
+
+      def host_with_port(input)
+        result = input['SERVER_NAME']
+        result = input['SERVER_ADDR'] unless result && !result.empty?
+        port = input['SERVER_PORT']
+        if port && port.to_i != (input['HTTPS'] ? 443 : 80)
+          "#{result}:#{port}"
+        else
+          result
         end
       end
 
