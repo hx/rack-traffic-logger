@@ -8,7 +8,7 @@ module Rack
       end
 
       def format(input)
-        case input[:event]
+        case input['event']
           when 'request' then format_request input
           when 'response' then format_response input
           else nil

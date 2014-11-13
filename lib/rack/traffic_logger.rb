@@ -35,7 +35,15 @@ module Rack
     end
 
     def call(env)
-      Request.new(self).call env
+      request = Request.new(self)
+      request.start env
+      response = nil
+      begin
+        response = app.call(env)
+      ensure
+        request.finish response
+      end
+      response
     end
 
     def log(hash)
@@ -60,18 +68,17 @@ module Rack
         @started_at = Time.now
       end
 
-      def call(env)
+      def start(env)
         @verb = env['REQUEST_METHOD']
         @env = env
-        begin
-          response = @logger.app.call(env)
-        ensure
-          @code = Array === response ? response.first.to_i : 0
-          @options = @logger.options.for(@verb, @code)
-          if @options.basic?
-            log_request env
-            log_response env, response if @code > 0
-          end
+      end
+
+      def finish(response)
+        @code = Array === response ? response.first.to_i : 0
+        @options = @logger.options.for(@verb, @code)
+        if @options.basic?
+          log_request @env
+          log_response @env, response if @code > 0
         end
       end
 
@@ -142,10 +149,11 @@ module Rack
       end
 
       def log(event)
+        # noinspection RubyStringKeysInHashInspection
         hash = {
-            timestamp: Time.now,
-            request_log_id: @id,
-            event: event
+            'timestamp' => Time.now.strftime('%FT%T.%3N%:z'),
+            'request_log_id' => @id,
+            'event' => event
         }
         yield hash rescue hash.merge! error: $!
         @logger.log hash

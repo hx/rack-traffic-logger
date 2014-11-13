@@ -35,9 +35,6 @@ module Rack
       def writeline(line)
         begin
           hash = JSON.parse(line)
-          hash[:timestamp] = Time.parse(hash['timestamp'])
-          hash[:request_log_id] = hash['request_log_id']
-          hash[:event] = hash['event']
           @output << @formatter.format(hash)
         rescue
           @output << line

@@ -3,7 +3,7 @@ class Rack::TrafficLogger
   describe StreamSimulator do
 
     let(:basic_request) {{
-        event: 'request',
+        'event' => 'request',
         'REQUEST_METHOD' => 'POST',
         'PATH_INFO' => '/foo/bar',
         'QUERY_STRING' => 'xyz=123',
@@ -30,7 +30,7 @@ class Rack::TrafficLogger
     let(:request_with_headers_and_binary_body) { request_with_binary_body.merge request_headers }
 
     let(:basic_response) {{
-        event: 'response',
+        'event' => 'response',
         'http_version' => 'HTTP/1.1',
         'status_code' => 201,
         'status_name' => 'Created'
