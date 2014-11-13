@@ -215,3 +215,26 @@ use Rack::TrafficLogger, 'file.log', Rack::TrafficLogger::Formatter::JSON.new(pr
 ```
 
 Note that if you do, log parsers may have a hard time understanding your logs if they expect each event to be on a single line. If you think this could be an issue, use the first method instead.
+
+## Usage with Faraday
+
+If you use [Faraday](https://github.com/lostisland/faraday), you can log outbound HTTP traffic using the included middleware adapter.
+
+```ruby
+Faraday.new(url: 'http://localhost') do |builder|
+    builder.use Rack::TrafficLogger::FaradayAdapter, Rails.root.join('log/http_out.log').to_s
+    builder.adapter Faraday.default_adapter
+end
+```
+
+You can also use express setup:
+
+```ruby
+Faraday.new(url: 'http://localhost') do |builder|
+  Rack::TrafficLogger::FaradayAdapter.use on: builder,
+                                          filter: ENV['LOG_OUTBOUND_HTTP'],
+                                          formatter: Rack::TrafficLogger::Formatter::JSON.new,
+                                          log_path: Rails.root.join('log/http_out.log').to_s
+  builder.adapter Faraday.default_adapter
+end
+```
