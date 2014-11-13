@@ -5,6 +5,7 @@ gemspec
 
 group :test do
   gem 'rspec', '~> 3.1'
+  gem 'faraday', '~> 0.9'
 end
 
 group :development do

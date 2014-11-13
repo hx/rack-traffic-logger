@@ -3,7 +3,7 @@ require 'json'
 module Rack
   class TrafficLogger
     class Formatter
-      class JSON < self
+      class JSON < Formatter
 
         def initialize(pretty_print: false)
           formatter = pretty_print ?

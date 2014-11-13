@@ -3,7 +3,7 @@ require 'time'
 module Rack
   class TrafficLogger
     class Formatter
-      class Stream < self
+      class Stream < Formatter
 
         def initialize(**options)
           @simulator = StreamSimulator.new(**options)

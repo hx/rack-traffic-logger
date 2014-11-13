@@ -38,7 +38,7 @@ module Rack
         result = render REQUEST_TEMPLATES[@color],
                         verb: input['REQUEST_METHOD'],
                         path: input['PATH_INFO'],
-                        qs: (q = input['QUERY_STRING']).empty? ? '' : "?#{q}",
+                        qs: (q = input['QUERY_STRING'] || '').empty? ? '' : "?#{q}",
                         http: input['HTTP_VERSION'] || 'HTTP/1.1'
         result << format_headers(env_request_headers input)
         result << format_body(input, input['CONTENT_TYPE'] || input['HTTP_CONTENT_TYPE'])
