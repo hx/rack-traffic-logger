@@ -134,6 +134,25 @@ use Rack::TrafficLogger, 'file.log', :request_headers, 401 => false, 500...600 =
 use Rack::TrafficLogger, 'file.log', [:get, :head] => 200..204, post: {only: {201 => :request_bodies}}, [:put, :patch] => :all
 ```
 
+#### Shorthand Syntax
+
+Use shorthand syntax if you want to configure logging through a string-based configuration medium. The previous examples could also be written as:
+
+```ruby
+use Rack::TrafficLogger, 'file.log', 'ih,401:f,5**:a,2**:{po:ib,de:f}'
+use Rack::TrafficLogger, 'file.log', '[ge,he]:200-204,po:{o:{201:ib}},[pu,pa]:a'
+```
+
+It's ruby, plus these rules:
+
+- Omit colons from Symbols. All strings of letters are converted to symbols (except `false`).
+- Use colons in place of hash rockets.
+- Use hyphens for ranges, i.e. `200-204` instead of `200..204`.
+- Use splats in place of large ranges, i.e. `40*` instead of `400..409`.
+- Write only the first two letters of HTTP verbs, e.g. `po` for `post`.
+- Use `a` for `all`, `h` for `headers`, `b` for `bodies`, `ih` for `request_headers`, `ib` for `request_bodies`, `oh` for `response_headers`, and `ob` for `response_bodies` (think of `i` for *input*, and `o` for *output*).
+- Use `o` for `only` and `f` for false.
+
 ### Tailing a JSON log
 
 Tailing a JSON log can induce migraines. There are a couple of solutions:

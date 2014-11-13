@@ -54,7 +54,7 @@ class Rack::TrafficLogger
       end
     end
 
-    describe 'shorthand' do
+    describe 'test shorthand' do
 
       subject { OptionInterpreter.new 200 => :all, 300 => false }
 
@@ -63,6 +63,16 @@ class Rack::TrafficLogger
         expect(subject.response_bodies? :get, 400).to be subject.for(:get, 400).response_bodies?
       end
 
+    end
+
+    describe 'argument shorthand' do
+      it 'should allow argument shorthand syntax' do
+        interpreter = OptionInterpreter.new '200:a,300:f'
+        expect(interpreter.response_bodies? :post, 200).to be true
+        expect(interpreter.response_bodies? :post, 201).to be false
+        expect(interpreter.basic? :get, 201).to be true
+        expect(interpreter.basic? :get, 300).to be false
+      end
     end
 
     describe 'argument combinations' do

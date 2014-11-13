@@ -54,6 +54,7 @@ module Rack
 
       def add_rules(input, **filter)
         input = [input] unless Array === input
+        input = Shorthand.new(input.shift).transform + input while String === input.first
         verb = filter[:verb]
         code = filter[:code]
         input.each do |token|
