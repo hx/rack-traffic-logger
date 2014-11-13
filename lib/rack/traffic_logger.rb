@@ -4,6 +4,7 @@ require_relative 'traffic_logger/option_interpreter'
 require_relative 'traffic_logger/stream_simulator'
 require_relative 'traffic_logger/formatter'
 require_relative 'traffic_logger/reader'
+require_relative 'traffic_logger/express_setup'
 
 require 'json'
 require 'securerandom'

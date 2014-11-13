@@ -153,6 +153,39 @@ It's ruby, plus these rules:
 - Use `a` for `all`, `h` for `headers`, `b` for `bodies`, `ih` for `request_headers`, `ib` for `request_bodies`, `oh` for `response_headers`, and `ob` for `response_bodies` (think of `i` for *input*, and `o` for *output*).
 - Use `o` for `only` and `f` for false.
 
+### Express Setup
+
+If you're reading log config from an environment variable, use express setup in place of `use` in a rack-up file to conditionally set up logging on your stack.
+
+```ruby
+# config.ru
+Rack::TrafficLogger.use on: self
+```
+
+Or, with some configuration:
+
+```ruby
+# config.ru
+Rack::TrafficLogger.use on: self,
+                        filter: ENV['LOG_INBOUND_HTTP'],
+                        formatter: Rack::TrafficLogger::Formatter::JSON.new,
+                        log_path: ::File.expand_path('../log/http_in.log', __FILE__)
+
+```
+
+- Express setup will send `use` to the object passed to the `on:` argument. In a rack-up file, pass `self`.
+- Logging will not be set up if `filter` is one of: `0 no false none off nil`, or a blank string.
+- Logging will revert to basic logging (no headers or bodies) if `filter` is one of `1 yes true normal basic minimal on`.
+- Omit `filter` to use default (basic) log filtering.
+- Omit `formatter` to use default (stream-like) log formatting.
+- Omit `log_path` to write directly to standard output (via `/dev/stdout`).
+
+Under typical conditions, express setup internally calls:
+
+```ruby
+on.use Rack::TrafficLogger, log_path, formatter, format
+```
+
 ### Tailing a JSON log
 
 Tailing a JSON log can induce migraines. There are a couple of solutions:
