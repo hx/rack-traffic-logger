@@ -11,7 +11,9 @@ module Rack
         case input['event']
           when 'request' then format_request input
           when 'response' then format_response input
-          else nil
+          else ''
+        end.tap do |result|
+          result << format_exception(input['logger_exception']) if input.key? 'logger_exception'
         end
       end
 
@@ -55,6 +57,10 @@ module Rack
         headers = input['headers']
         result << format_headers(headers) if headers
         result << format_body(input, headers && headers['Content-Type'])
+      end
+
+      def format_exception(e)
+        "\n\n#{e['class']}: #{e['message']}\n  #{e['backtrace'].join "\n  "}"
       end
 
       def render(template, data)

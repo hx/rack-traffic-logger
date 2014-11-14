@@ -1,5 +1,6 @@
 module Rack
   class TrafficLogger
+    # noinspection RubyStringKeysInHashInspection
     class Request
 
       def initialize(logger)
@@ -89,14 +90,21 @@ module Rack
       end
 
       def log(event)
-        # noinspection RubyStringKeysInHashInspection
         hash = {
             'timestamp' => Time.now.strftime('%FT%T.%3N%:z'),
             'request_log_id' => @id,
             'event' => event
         }
-        yield hash rescue hash.merge! error: $!
+        yield hash rescue hash.merge! 'logger_exception' => expand_exception($!)
         @logger.log hash
+      end
+
+      def expand_exception(e)
+        {
+            'class' => e.class.name,
+            'message' => e.message,
+            'backtrace' => e.backtrace
+        }
       end
 
     end
