@@ -1,5 +1,4 @@
 require 'json'
-require 'time'
 
 module Rack
   class TrafficLogger

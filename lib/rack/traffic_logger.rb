@@ -8,9 +8,6 @@ require_relative 'traffic_logger/express_setup'
 require_relative 'traffic_logger/request'
 require_relative 'traffic_logger/faraday_adapter'
 
-require 'json'
-require 'securerandom'
-
 module Rack
   class TrafficLogger
 

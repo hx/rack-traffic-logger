@@ -1,3 +1,5 @@
+require 'json'
+
 module Rack
   class TrafficLogger
     class StreamSimulator

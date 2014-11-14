@@ -1,3 +1,8 @@
+require 'rack/utils'
+require 'rack/body_proxy'
+require 'zlib'
+require 'securerandom'
+
 module Rack
   class TrafficLogger
     # noinspection RubyStringKeysInHashInspection
@@ -63,7 +68,7 @@ module Rack
       def get_real_body(body)
 
         # For bodies representing temporary files
-        body = File.open(body.path, 'rb') { |f| f.read } if body.respond_to? :path
+        body = ::File.open(body.path, 'rb') { |f| f.read } if body.respond_to? :path
 
         # For bodies representing streams
         body = body.read.tap { body.rewind } if body.respond_to? :read
