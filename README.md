@@ -1,6 +1,6 @@
 # Rack::TrafficLogger
 
-This is simple Rack middleware for logging incoming/outgoing HTTP/S traffic.
+This is Rack middleware for logging incoming/outgoing HTTP/S traffic.
 
 ## Installation
 
@@ -170,7 +170,6 @@ Rack::TrafficLogger.use on: self,
                         filter: ENV['LOG_INBOUND_HTTP'],
                         formatter: Rack::TrafficLogger::Formatter::JSON.new,
                         log_path: ::File.expand_path('../log/http_in.log', __FILE__)
-
 ```
 
 - Express setup will send `use` to the object passed to the `on:` argument. In a rack-up file, pass `self`.
@@ -183,7 +182,7 @@ Rack::TrafficLogger.use on: self,
 Under typical conditions, express setup internally calls:
 
 ```ruby
-on.use Rack::TrafficLogger, log_path, formatter, format
+on.use Rack::TrafficLogger, log_path, formatter, filter
 ```
 
 ### Tailing a JSON log
