@@ -1,3 +1,9 @@
+require 'coveralls'
+require 'simplecov'
+
+SimpleCov.start
+Coveralls.wear! if ENV['WEAR_COVERALLS']
+
 require 'rack/mock'
 require 'rack/traffic_logger'
 

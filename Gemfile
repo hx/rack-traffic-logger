@@ -6,6 +6,7 @@ gemspec
 group :test do
   gem 'rspec', '~> 3.1'
   gem 'faraday', '~> 0.9'
+  gem 'coveralls', require: false
 end
 
 group :development do

@@ -6,6 +6,8 @@ rvm:
   - 2.1.2
   - 2.1.5
 
+env: WEAR_COVERALLS=1
+
 script: bundle exec rspec
 
 bundler_args: --without development
