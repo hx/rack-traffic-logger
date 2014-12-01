@@ -1,4 +1,4 @@
-# Rack::TrafficLogger
+# Rack::TrafficLogger [![Build Status](https://travis-ci.org/hx/rack-traffic-logger.svg?branch=develop)](https://travis-ci.org/hx/rack-traffic-logger)
 
 This is Rack middleware for logging incoming/outgoing HTTP/S traffic.
 
