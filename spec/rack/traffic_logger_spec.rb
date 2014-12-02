@@ -167,5 +167,21 @@ module Rack
 
     end
 
+    describe '::use' do
+
+      let(:target) { double 'Target', use: true }
+
+      it 'should pass arguments to its target' do
+        expect(target).to receive(:use).once.with(TrafficLogger, 2, 3, 'abc')
+        TrafficLogger.use on: target, filter: 'abc', log_path: 2, formatter: 3
+      end
+
+      it 'should pass defaults when arguments are missing' do
+        expect(target).to receive(:use).once.with(TrafficLogger, '/dev/stdout')
+        TrafficLogger.use on: target
+      end
+
+    end
+
   end
 end
