@@ -8,7 +8,7 @@ module Rack
 
       let(:good_hash) {{ timestamp: '2014-12-02T19:13:03.1+11:00' }}
       let(:good_input) { StringIO.new good_hash.to_json << "\n" }
-      let(:good_output) { "@ Tue 02 Dec '14 19:13:03.100 #\n\n\n" }
+      let(:good_output) { /\A@ \w+ \d\d \w+ '\d\d \d\d:\d3:03\.100 #\n{3}\z/ }
       let(:bad_input) { StringIO.new "--\n" }
       let(:bad_output) { "--\n" }
       let :slow_input do
