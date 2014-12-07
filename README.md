@@ -1,7 +1,7 @@
 # Rack::TrafficLogger
 
 [![Build Status](https://travis-ci.org/hx/rack-traffic-logger.svg?branch=develop)](https://travis-ci.org/hx/rack-traffic-logger)
-[![Coverage Status](https://img.shields.io/coveralls/hx/rack-traffic-logger.svg)](https://coveralls.io/r/hx/rack-traffic-logger?branch=develop)
+[![Coverage Status](https://img.shields.io/coveralls/hx/rack-traffic-logger/develop.svg)](https://coveralls.io/r/hx/rack-traffic-logger?branch=develop)
 
 This is Rack middleware for logging incoming/outgoing HTTP/S traffic.
 
