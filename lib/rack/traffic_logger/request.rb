@@ -15,7 +15,7 @@ module Rack
       end
 
       def start(env)
-        @verb = env['REQUEST_METHOD']
+        @verb = env['REQUEST_METHOD'].downcase.to_sym
         @env = env
       end
 
