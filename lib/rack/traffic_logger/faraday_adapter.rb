@@ -33,7 +33,10 @@ module Rack
             k = "HTTP_#{k}" unless k.start_with? 'CONTENT_'
             [k, v]
           end.to_h)
-          hash['rack.input'] = StringIO.new(faraday_env.body) if faraday_env.body
+          if faraday_env.body
+            body = faraday_env.body
+            hash['rack.input'] = body.respond_to?(:read) ? body : StringIO.new(body)
+          end
         end
       end
 

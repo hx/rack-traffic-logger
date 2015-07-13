@@ -23,6 +23,7 @@ module Rack
 
       let :conn do
         Faraday.new('http://domain.kom') do |conn|
+          conn.request :multipart
           conn.adapter :test do |stub|
             stub.get( '/foo') { |_| [200, {'Content-Type' => 'text/plain'}, 'bar'] }
             stub.post('/foo') { |env| [201, {'Content-Type' => 'application/json'}, env.body] }
@@ -33,6 +34,12 @@ module Rack
       end
 
       subject { [FaradayAdapter, logger, formatter ] }
+
+      describe 'bugs' do
+        example 'multipart requests failure' do
+          conn.post '/foo', foo: Faraday::UploadIO.new(StringIO.new('hello'), 'application/x-octet-stream')
+        end
+      end
 
       describe 'request logging' do
 
