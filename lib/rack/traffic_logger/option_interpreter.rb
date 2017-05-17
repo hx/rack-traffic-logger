@@ -3,7 +3,7 @@ require_relative 'option_interpreter/shorthand'
 module Rack
   class TrafficLogger
     class OptionInterpreter
-      
+
       VERBS = %i[get post put patch delete head options trace]
       TYPES = %i[request_headers response_headers request_bodies response_bodies]
 
@@ -62,7 +62,7 @@ module Rack
             when *VERBS
               raise "Verb on verb (#{token} on #{verb})" if verb
               rules << OnlyVerb.new(token, filter)
-            when Fixnum, Range
+            when Integer, Range
               raise "Code on code (#{token} on #{code})" if code
               rules << OnlyCode.new(token, filter)
             when *TYPES
@@ -93,7 +93,7 @@ module Rack
       def add_rule_pair(name, value, **filter)
         case name
           when *VERBS then add_rules value, **filter.merge(verb: name)
-          when Fixnum, Range then add_rules value, **filter.merge(code: name)
+          when Integer, Range then add_rules value, **filter.merge(code: name)
           when Array then name.each { |n| add_rule_pair n, value, **filter }
           else raise "Invalid token of type #{name.class.name} : #{name}"
         end
@@ -101,7 +101,7 @@ module Rack
 
       # Test whether a given verb, status code, and log type should be logged
       # @param verb [Symbol] One of the {self::VERBS} symbols
-      # @param code [Fixnum] The HTTP status code
+      # @param code [Integer] The HTTP status code
       # @param type [Symbol|NilClass] One of the {self::TYPES} symbols, or `nil` for basic request/response details
       # @return [TrueClass|FalseClass] Whether the type should be logged
       def test(*args)
