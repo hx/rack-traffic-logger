@@ -8,7 +8,7 @@ class Rack::TrafficLogger
 
       VERBS.each do |verb|
         define_method verb do |*args|
-          code = Fixnum === args.first && args.shift
+          code = Integer === args.first && args.shift
           subject = @options
           message = "a #{verb.to_s.upcase} request"
           message << " with a #{code} response" if code
