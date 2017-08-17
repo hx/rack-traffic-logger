@@ -2,9 +2,8 @@ language: ruby
 cache: bundler
 
 rvm:
-  - 2.1.0
-  - 2.1.2
   - 2.1.5
+  - 2.4.1
 
 env: WEAR_COVERALLS=1
 
