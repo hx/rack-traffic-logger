@@ -19,5 +19,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'rack', '>= 1'
 
-  spec.required_ruby_version = '~> 2.1'
+  spec.required_ruby_version = '=> 2.1'
 end
