@@ -3,7 +3,7 @@ require_relative 'option_interpreter/shorthand'
 module Rack
   class TrafficLogger
     class OptionInterpreter
-      
+
       VERBS = %i[get post put patch delete head options trace]
       TYPES = %i[request_headers response_headers request_bodies response_bodies]
 
