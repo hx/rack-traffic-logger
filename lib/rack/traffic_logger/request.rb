@@ -86,7 +86,7 @@ module Rack
 
       def add_body_to_hash(body, encoding, hash)
         body = Zlib::GzipReader.new(StringIO.new body).read if encoding == 'gzip'
-        body.force_encoding 'UTF-8'
+        body = body.dup.force_encoding 'UTF-8'
         if body.valid_encoding?
           hash['body'] = body
         else
